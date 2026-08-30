@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Badges & Achievements — SQL Quest</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="min-h-screen flex bg-slate-950 text-slate-100">
+
+  <!-- Sidebar Navigation -->
+  <div id="nav-container"></div>
+
+  <!-- Achievements grid -->
+  <main class="flex-1 p-5 overflow-y-auto w-full">
+    
+    <!-- Top Header -->
+    <header class="flex justify-between items-center mb-5 pb-3 border-b border-slate-800">
+      <div>
+        <h2 class="text-2xl font-extrabold tracking-tight">BADGE GALLERY</h2>
+        <p class="text-xs text-slate-500 mt-1 uppercase tracking-wider">Showcase of unlocked DB credentials</p>
+      </div>
+      <div id="badges-unlocked-count" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs font-bold text-purple-400">
+        0/7 Badges
+      </div>
+    </header>
+
+    <!-- Profile summary banner -->
+    <div class="glass border border-slate-900 rounded-3xl p-4 md:p-5 flex flex-col md:flex-row items-center justify-between mb-5 shadow-xl relative overflow-hidden">
+      <!-- Decor -->
+      <div class="absolute -top-10 -left-10 w-40 h-40 bg-purple-500 rounded-full blur-3xl opacity-10"></div>
+      
+      <div class="flex items-center space-x-4 mb-3 md:mb-0">
+        <div class="w-12 h-12 rounded-xl bg-purple-500 bg-opacity-10 border border-purple-500 border-opacity-30 flex items-center justify-center text-3xl">
+          🏅
+        </div>
+        <div>
+          <h3 id="profile-name" class="text-xl font-black text-white">SQL Coder</h3>
+          <p id="profile-rank" class="text-[11px] text-slate-400 mt-0.5">Level 1/50 • Junior Analyst</p>
+        </div>
+      </div>
+
+      <div class="flex space-x-4 text-center text-[11px]">
+        <div class="p-2 bg-slate-900 rounded-xl border border-slate-850 min-w-[4.5rem]">
+          <span class="block text-base font-bold text-cyan-400" id="stat-xp">0</span>
+          <span class="text-[8px] text-slate-500 uppercase tracking-widest">XP</span>
+        </div>
+        <div class="p-2 bg-slate-900 rounded-xl border border-slate-850 min-w-[4.5rem]">
+          <span class="block text-base font-bold text-amber-500" id="stat-streak">0</span>
+          <span class="text-[8px] text-slate-500 uppercase tracking-widest">Streak</span>
+        </div>
+        <div class="p-2 bg-slate-900 rounded-xl border border-slate-850 min-w-[4.5rem]">
+          <span class="block text-base font-bold text-emerald-400" id="stat-accuracy">0%</span>
+          <span class="text-[8px] text-slate-500 uppercase tracking-widest">Accuracy</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gallery Shelf -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-4" id="badges-gallery">
+      
+      <!-- Rendered dynamically -->
+
+    </section>
+
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <script src="js/database.js"></script>
+  <script src="js/progress.js"></script>
+  <script src="js/levels.js"></script>
+  <script src="js/achievements.js"></script>
+  <script src="js/questions.js"></script>
+  <script src="js/sql-engine.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    // Setup sidebar
+    App.renderNavigation('achievements');
+
+    var state = Progress.load();
+
+    // Set stats
+    document.getElementById('profile-name').innerText = state.playerName;
+    document.getElementById('profile-rank').innerText = `Level ${state.completedLevels.length === 50 ? '50 (Master)' : state.currentLevel}/50 • ${state.completedLevels.length >= 40 ? 'Oracle DBA Master' : (state.completedLevels.length >= 20 ? 'SQL Specialist' : 'Junior DB Analyst')}`;
+    document.getElementById('stat-xp').innerText = state.xp;
+    document.getElementById('stat-streak').innerText = `${state.streak} days`;
+    document.getElementById('stat-accuracy').innerText = `${state.accuracy}%`;
+    document.getElementById('badges-unlocked-count').innerText = `${state.badges.length}/7 Badges Unlocked`;
+
+    // Render gallery details
+    var gallery = document.getElementById('badges-gallery');
+    var html = '';
+
+    Achievements.BADGES.forEach(badge => {
+      const isUnlocked = state.badges.includes(badge.id);
+      
+      html += `
+        <div class="bg-slate-900 border border-slate-850 rounded-xl p-4 flex space-x-4 items-center transition-all ${
+          isUnlocked 
+            ? 'glow-purple border-purple-500 border-opacity-20' 
+            : 'badge-locked'
+        }">
+          <div class="w-12 h-12 rounded-full bg-slate-950 flex items-center justify-center text-3xl select-none relative">
+            ${badge.icon}
+            ${!isUnlocked ? '<span class="absolute -bottom-1 -right-1 bg-slate-900 p-0.5 border border-slate-800 rounded-full text-[9px]">🔒</span>' : ''}
+          </div>
+          
+          <div class="flex-1">
+            <div class="flex justify-between items-center">
+              <h4 class="font-bold text-slate-100 text-sm">${badge.title}</h4>
+              <span class="text-[8px] font-bold uppercase ${isUnlocked ? 'text-emerald-400' : 'text-slate-600'}">
+                ${isUnlocked ? 'UNLOCKED' : 'LOCKED'}
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1 leading-normal">${badge.description}</p>
+            
+            <!-- Progress bar representation inside badge -->
+            <div class="w-full bg-slate-950 h-1 rounded-full mt-2.5 overflow-hidden">
+              <div class="h-full bg-purple-500" style="width: ${isUnlocked ? '100%' : '0%'}"></div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    gallery.innerHTML = html;
+  </script>
+</body>
+</html>

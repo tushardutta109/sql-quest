@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL World Map — SQL Quest</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="min-h-screen flex bg-slate-950 text-slate-100">
+
+  <!-- Shared Sidebar Navigation -->
+  <div id="nav-container"></div>  <!-- Map content -->
+  <main class="flex-1 p-5 overflow-y-auto w-full">
+    
+    <!-- Top Header -->
+    <header class="flex justify-between items-center mb-5 pb-3 border-b border-slate-800">
+      <div>
+        <h2 class="text-2xl font-extrabold tracking-tight">SQL WORLD MAP</h2>
+        <p class="text-xs text-slate-500 mt-1 uppercase tracking-wider">World Map: Click a node to begin simulator</p>
+      </div>
+      <!-- Progress pill -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs font-bold text-cyan-400" id="progress-pill">
+        0/50 Levels
+      </div>
+    </header>
+
+    <!-- World Map Trail -->
+    <div class="space-y-12 pb-16 relative" id="map-trail">
+      
+      <!-- Dynamic rendering via JS -->
+ 
+    </div>
+
+  </main>
+
+  <!-- Core scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <script src="js/database.js"></script>
+  <script src="js/progress.js"></script>
+  <script src="js/levels.js"></script>
+  <script src="js/achievements.js"></script>
+  <script src="js/questions.js"></script>
+  <script src="js/sql-engine.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    // Sidebar rendering
+    App.renderNavigation('world');
+
+    var state = Progress.load();
+    document.getElementById('progress-pill').innerText = `${state.completedLevels.length}/50 Levels Unlocked`;
+
+    var worlds = [
+      { id: 1, name: "🌱 WORLD 1 — SQL BEGINNER", range: [1, 10], color: "from-emerald-500/20 to-teal-500/5" },
+      { id: 2, name: "🌿 WORLD 2 — SQL FOUNDATION", range: [11, 20], color: "from-teal-500/20 to-cyan-500/5" },
+      { id: 3, name: "⚔️ WORLD 3 — SQL INTERMEDIATE", range: [21, 30], color: "from-cyan-500/20 to-blue-500/5" },
+      { id: 4, name: "🔥 WORLD 4 — SQL ADVANCED", range: [31, 40], color: "from-purple-500/20 to-indigo-500/5" },
+      { id: 5, name: "👑 WORLD 5 — SQL MASTER", range: [41, 50], color: "from-amber-500/20 to-yellow-500/5" }
+    ];
+
+    var container = document.getElementById('map-trail');
+    var mapHtml = '';
+
+    worlds.forEach(w => {
+      mapHtml += `
+        <!-- World Section -->
+        <section class="glass border border-slate-900 rounded-3xl p-4 relative overflow-hidden bg-gradient-to-br ${w.color}">
+          <h3 class="text-base font-black tracking-widest text-slate-300 mb-5 border-b border-slate-800 pb-2.5 flex justify-between items-center">
+            <span>${w.name}</span>
+            <span class="text-[10px] text-slate-500 uppercase">Levels ${w.range[0]} - ${w.range[1]}</span>
+          </h3>
+
+          <!-- Timeline nodes -->
+          <div class="relative min-h-[560px] w-full py-5">
+      `;
+
+      for (let l = w.range[0]; l <= w.range[1]; l++) {
+        const level = LEVELS.find(lvl => lvl.id === l);
+        if (!level) continue;
+
+        // Winding offset calculation
+        const idx = l - w.range[0];
+        const offsetPct = 50 + Math.sin(idx * 1.25) * 32; // Winding path formula
+        const topPx = idx * 52; // Vertical spacing to prevent overlap
+
+        // Unlock condition
+        const isCompleted = state.completedLevels.includes(l);
+        const isCurrent = l === state.currentLevel;
+        const isUnlocked = l <= state.currentLevel || isCompleted;
+
+        let statusClass = 'locked';
+        if (isCurrent) statusClass = 'current';
+        else if (isUnlocked) statusClass = 'unlocked';
+
+        mapHtml += `
+          <div class="absolute flex flex-col items-center group cursor-pointer transition-all duration-200" 
+               style="left: ${offsetPct}%; top: ${topPx}px; transform: translateX(-50%);">
+            
+            <!-- Node circle -->
+            <a href="${isUnlocked ? `level.html?level=${l}` : '#'}" 
+               class="map-node ${statusClass} w-12 h-12 rounded-full flex items-center justify-center font-black text-base select-none text-white z-10">
+              ${isUnlocked ? (isCompleted ? '✓' : l) : '🔒'}
+            </a>
+
+            <!-- Node Info tooltip hover -->
+            <div class="absolute bottom-full mb-3 hidden group-hover:flex flex-col items-center z-20 pointer-events-none transition-all duration-300">
+              <div class="bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 shadow-2xl text-[11px] w-48 text-center">
+                <div class="font-bold text-cyan-400">Level ${l}: ${level.title}</div>
+                <div class="text-[9px] text-slate-400 mt-1 leading-normal">${level.challenge.substring(0, 75)}...</div>
+                <div class="text-[9px] text-emerald-400 mt-1 uppercase font-bold">${isCompleted ? 'COMPLETED' : (isUnlocked ? 'READY TO PLAY' : 'LOCKED')}</div>
+              </div>
+              <!-- Tooltip arrow -->
+              <div class="w-2 h-2 bg-slate-950 border-r border-b border-slate-800 rotate-45 -mt-1"></div>
+            </div>
+
+            <!-- Level Title display below node -->
+            <span class="text-[10px] font-semibold text-slate-500 mt-1.5 whitespace-nowrap group-hover:text-slate-300 transition-colors">
+              ${level.title}
+            </span>
+
+          </div>
+        `;
+      }
+
+      mapHtml += `
+          </div>
+        </section>
+      `;
+    });
+
+    container.innerHTML = mapHtml;
+  </script>
+</body>
+</html>

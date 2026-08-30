@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Practice Simulator — SQL Quest</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="min-h-screen flex bg-slate-950 text-slate-100">
+
+  <!-- Sidebar Navigation -->
+  <div id="nav-container"></div>
+
+  <!-- Playground content -->
+  <main class="flex-1 flex flex-col md:flex-row h-screen overflow-hidden">
+    
+    <!-- Left panel: Topic Selector or active Question instructions -->
+    <section class="w-full md:w-1/2 flex flex-col bg-slate-900 border-r border-slate-800 h-full overflow-y-auto p-4 space-y-4" id="practice-left-pane">
+      
+      <!-- Dynamic selector screen rendered by default, or active challenge -->
+
+    </section>
+
+    <!-- Right panel: SQL Editor & Result Terminal -->
+    <section class="w-full md:w-1/2 flex flex-col h-full overflow-hidden p-4 space-y-3.5" id="practice-right-pane">
+      
+      <!-- Display editor only when challenge is active -->
+      <div id="empty-state" class="flex-1 flex flex-col items-center justify-center text-center p-6 space-y-2.5">
+        <span class="text-5xl animate-pulse">🎯</span>
+        <h3 class="text-lg font-bold">SQL Practice Arena</h3>
+        <p class="text-xs text-slate-500 max-w-sm">Select a category on the left to begin training. Correct answers award +20 XP!</p>
+      </div>
+
+      <div id="active-practice-ide" class="flex-1 flex flex-col space-y-3.5 hidden">
+        <!-- Challenge details -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5">
+          <div class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-1">PRACTICE CHALLENGE</div>
+          <p class="text-xs text-slate-200 font-medium" id="practice-challenge-text"></p>
+        </div>
+
+        <!-- Editor workspace -->
+        <div class="flex-1 flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden relative">
+          <div class="bg-slate-950 px-3 py-1.5 border-b border-slate-850 flex justify-between items-center text-xs font-mono text-slate-400">
+            <span>PRACTICE EDITOR</span>
+            <span class="text-yellow-500 font-bold">+20 XP per win</span>
+          </div>
+
+          <div class="flex-1 flex font-mono text-xs leading-5 overflow-hidden relative">
+            <div id="editor-line-numbers" class="bg-slate-950 px-2 py-3 text-slate-600 text-right select-none border-r border-slate-850 flex flex-col space-y-0.5 overflow-hidden min-w-[2.5rem]">
+              <div>1</div>
+            </div>
+            <textarea id="editor-textarea" 
+                      class="w-full bg-slate-900 text-slate-100 p-3 focus:outline-none resize-none font-mono leading-5 overflow-y-auto text-xs"
+                      spellcheck="false" placeholder="SELECT * FROM ..."></textarea>
+          </div>
+
+          <!-- Editor Toolbar -->
+          <div class="bg-slate-950 p-2 border-t border-slate-850 flex justify-between items-center">
+            <div class="flex space-x-1.5">
+              <button id="run-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-extrabold px-3 py-1.5 rounded-lg border border-slate-700">
+                ▶ RUN
+              </button>
+              <button id="hint-btn" class="bg-slate-800 hover:bg-slate-700 text-amber-500 text-[11px] font-bold px-2.5 py-1.5 rounded-lg border border-slate-700">
+                💡 HINT
+              </button>
+            </div>
+            <button id="submit-btn" class="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-black text-[11px] px-4 py-2 rounded-lg transform hover:scale-[1.02] shadow">
+              ✓ SUBMIT
+            </button>
+          </div>
+        </div>
+
+        <!-- Terminal screen -->
+        <div class="h-1/3 bg-slate-950 border border-slate-850 rounded-xl p-3 flex flex-col overflow-hidden font-mono text-[11px] shadow-inner">
+          <div class="text-[9px] text-slate-500 uppercase tracking-widest border-b border-slate-850 pb-1.5 mb-1.5">Result Output</div>
+          <div class="flex-1 overflow-auto" id="result-console">
+            <span class="text-slate-600">Terminal ready. Select a topic to start.</span>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <script src="js/database.js"></script>
+  <script src="js/progress.js"></script>
+  <script src="js/levels.js"></script>
+  <script src="js/achievements.js"></script>
+  <script src="js/questions.js"></script>
+  <script src="js/sql-engine.js"></script>
+  <script src="js/app.js"></script>
+
+  <script>
+    var activeTopic = '';
+    var currentQuestions = [];
+    var currentQuestionIdx = 0;
+    var activeQuestion = null;
+
+    // Sidebar rendering
+    App.renderNavigation('practice');
+
+    // Setup editor scrolling
+    var editorArea = document.getElementById('editor-textarea');
+    var lineNumbers = document.getElementById('editor-line-numbers');
+    editorArea.addEventListener('scroll', () => {
+      lineNumbers.scrollTop = editorArea.scrollTop;
+    });
+    editorArea.addEventListener('input', updateLineNumbers);
+
+    // Check query params
+    var params = new URLSearchParams(window.location.search);
+    var startTopic = params.get('topic');
+
+    if (startTopic && PRACTICE_QUESTIONS[startTopic]) {
+      startPractice(startTopic);
+    } else {
+      renderTopicSelector();
+    }
+
+    // Toolbar bindings
+    document.getElementById('run-btn').addEventListener('click', () => {
+      App.Sound.playClick();
+      const userQ = editorArea.value.trim();
+      if (!userQ) return;
+      const result = SQLEngine.execute(userQ, activeQuestion.database);
+      renderTerminalResult(result);
+    });
+
+    document.getElementById('hint-btn').addEventListener('click', () => {
+      App.Sound.playClick();
+      alert(`💡 Hint: ${activeQuestion.hint}`);
+    });
+
+    document.getElementById('submit-btn').addEventListener('click', submitPracticeAnswer);
+
+    function updateLineNumbers() {
+      const editorArea = document.getElementById('editor-textarea');
+      const lineNumbers = document.getElementById('editor-line-numbers');
+      const lines = editorArea.value.split('\n').length;
+      let html = '';
+      for (let i = 1; i <= Math.max(1, lines); i++) {
+        html += `<div>${i}</div>`;
+      }
+      lineNumbers.innerHTML = html;
+    }
+
+    function renderTopicSelector() {
+      const leftPane = document.getElementById('practice-left-pane');
+      leftPane.innerHTML = `
+        <h2 class="text-xl font-extrabold text-white pb-2.5 border-b border-slate-800">Practice Simulator</h2>
+        <p class="text-xs text-slate-400">
+          Reinforce your SQL skills by practicing randomized challenges. Completing practice exercises earns extra XP and improves coder accuracy ratings.
+        </p>
+
+        <div class="space-y-3">
+          <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Select Category</h3>
+          
+          <button onclick="startPractice('basics')" class="w-full text-left bg-slate-950 border border-slate-850 hover:bg-slate-900 transition-colors p-4 rounded-xl flex justify-between items-center group">
+            <div>
+              <span class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">Level 1 - 10</span>
+              <h4 class="text-base font-bold text-slate-200 mt-0.5">SQL Basics</h4>
+              <p class="text-[10px] text-slate-500 mt-0.5">SELECT, WHERE filters, Operators, BETWEEN, IN list filters.</p>
+            </div>
+            <span class="text-xl transition-transform group-hover:translate-x-1.5">🌱 ➔</span>
+          </button>
+
+          <button onclick="startPractice('foundations')" class="w-full text-left bg-slate-950 border border-slate-850 hover:bg-slate-900 transition-colors p-4 rounded-xl flex justify-between items-center group">
+            <div>
+              <span class="text-[10px] text-teal-400 font-bold uppercase tracking-wider">Level 11 - 20</span>
+              <h4 class="text-base font-bold text-slate-200 mt-0.5">SQL Foundations</h4>
+              <p class="text-[10px] text-slate-500 mt-0.5">LIKE matching, NULL checks, ORDER BY, aggregate counts.</p>
+            </div>
+            <span class="text-xl transition-transform group-hover:translate-x-1.5">🌿 ➔</span>
+          </button>
+
+          <button onclick="startPractice('joins')" class="w-full text-left bg-slate-950 border border-slate-850 hover:bg-slate-900 transition-colors p-4 rounded-xl flex justify-between items-center group">
+            <div>
+              <span class="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">Level 23 - 28</span>
+              <h4 class="text-base font-bold text-slate-200 mt-0.5">JOINs & Tables</h4>
+              <p class="text-[10px] text-slate-500 mt-0.5">INNER, LEFT, RIGHT OUTER, FULL and SELF Joins.</p>
+            </div>
+            <span class="text-xl transition-transform group-hover:translate-x-1.5">⚔️ ➔</span>
+          </button>
+
+          <button onclick="startPractice('subqueries')" class="w-full text-left bg-slate-950 border border-slate-850 hover:bg-slate-900 transition-colors p-4 rounded-xl flex justify-between items-center group">
+            <div>
+              <span class="text-[10px] text-purple-400 font-bold uppercase tracking-wider">Level 29 - 32</span>
+              <h4 class="text-base font-bold text-slate-200 mt-0.5">Subqueries</h4>
+              <p class="text-[10px] text-slate-500 mt-0.5">Nested SQL subqueries, EXISTS, and correlated filters.</p>
+            </div>
+            <span class="text-xl transition-transform group-hover:translate-x-1.5">🥷 ➔</span>
+          </button>
+        </div>
+      `;
+    }
+
+    function startPractice(topic) {
+      activeTopic = topic;
+      currentQuestions = PRACTICE_QUESTIONS[topic];
+      currentQuestionIdx = 0;
+
+      // Show IDE
+      document.getElementById('empty-state').classList.add('hidden');
+      document.getElementById('active-practice-ide').classList.remove('hidden');
+
+      loadPracticeQuestion(0);
+    }
+
+    function loadPracticeQuestion(idx) {
+      currentQuestionIdx = idx;
+      activeQuestion = currentQuestions[idx];
+
+      const leftPane = document.getElementById('practice-left-pane');
+      leftPane.innerHTML = `
+        <div class="flex justify-between items-center pb-2.5 border-b border-slate-800">
+          <button onclick="exitPractice()" class="text-xs font-bold text-slate-500 hover:text-white">
+            ⬅ Exit Practice
+          </button>
+          <span class="bg-slate-950 border border-slate-800 text-[10px] px-2 py-0.5 font-bold text-cyan-400 rounded">
+            Question ${idx + 1} / ${currentQuestions.length}
+          </span>
+        </div>
+
+        <div>
+          <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Active Simulator Topic</span>
+          <h2 class="text-xl font-extrabold text-white mt-0.5 capitalize">${activeTopic} Practice</h2>
+        </div>
+
+        <div class="bg-slate-950 p-3 border border-slate-850 rounded-lg space-y-2 font-mono text-xs text-slate-400">
+          <div class="font-bold text-slate-200 border-b border-slate-900 pb-1 uppercase text-[10px]">Schema involved:</div>
+          ${activeQuestion.tables.map(tbl => `
+            <div>
+              <span class="text-cyan-400 font-bold">${tbl.toUpperCase()}</span>
+              <span class="text-slate-600">(${Object.keys(DATABASES[activeQuestion.database][tbl][0]).join(', ')})</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      document.getElementById('practice-challenge-text').innerText = activeQuestion.question;
+      document.getElementById('editor-textarea').value = '';
+      document.getElementById('result-console').innerHTML = `<span class="text-slate-500">Terminal ready. Type a query and click RUN...</span>`;
+      updateLineNumbers();
+    }
+
+    function exitPractice() {
+      App.Sound.playClick();
+      document.getElementById('empty-state').classList.remove('hidden');
+      document.getElementById('active-practice-ide').classList.add('hidden');
+      renderTopicSelector();
+    }
+
+    function submitPracticeAnswer() {
+      App.Sound.playClick();
+      const userQ = document.getElementById('editor-textarea').value.trim();
+      if (!userQ) return;
+
+      const validation = SQLEngine.validateAnswer(
+        userQ, 
+        activeQuestion.solution, 
+        activeQuestion.database, 
+        activeQuestion.requiredKeywords
+      );
+
+      if (validation.isCorrect) {
+        App.Sound.playSuccess();
+        Progress.awardXp(20);
+        Progress.save();
+        
+        alert("🎉 CORRECT! +20 XP awarded.");
+
+        const nextIdx = currentQuestionIdx + 1;
+        if (nextIdx < currentQuestions.length) {
+          loadPracticeQuestion(nextIdx);
+        } else {
+          alert("🏆 PRACTICE SET COMPLETED! Returning to selector.");
+          exitPractice();
+        }
+      } else {
+        App.Sound.playFailure();
+        alert(`❌ Incorrect Result!\n\n${validation.error || 'Check columns and filter criteria.'}`);
+        if (validation.userResult) {
+          renderTerminalResult(validation.userResult);
+        }
+      }
+    }
+
+    function renderTerminalResult(result) {
+      const consoleEl = document.getElementById('result-console');
+      if (!result.success) {
+        consoleEl.innerHTML = `<span class="text-rose-400">ERROR: ${result.error}</span>`;
+        return;
+      }
+
+      let html = `
+        <table class="min-w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b-2 border-slate-700">
+              ${result.columns.map(c => `<th class="p-2 text-slate-400">${c.toUpperCase()}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${result.rows.map(row => `
+              <tr class="border-b border-slate-850 hover:bg-slate-900">
+                ${result.columns.map(c => `<td class="p-2">${row[c] === null ? 'NULL' : row[c]}</td>`).join('')}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      consoleEl.innerHTML = html;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL Reference Cheat Sheet — SQL Quest</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="min-h-screen flex bg-slate-950 text-slate-100">
+
+  <!-- Sidebar Navigation -->
+  <div id="nav-container"></div>
+
+  <!-- Searchable reference sheet -->
+  <main class="flex-1 p-5 overflow-y-auto w-full">
+    
+    <!-- Top Header -->
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 pb-3 border-b border-slate-800 gap-3">
+      <div>
+        <h2 class="text-2xl font-extrabold tracking-tight">SQL CHEAT SHEET</h2>
+        <p class="text-xs text-slate-500 mt-1 uppercase tracking-wider">Oracle SQL syntax reference library</p>
+      </div>
+      
+      <!-- Search Input -->
+      <div class="relative w-full md:w-60">
+        <input type="text" id="search-input" placeholder="Search syntax..." 
+               class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 transition-colors">
+        <span class="absolute right-3 top-2 text-xs text-slate-500">🔍</span>
+      </div>
+    </header>
+
+    <!-- Reference Grid -->
+    <div class="grid grid-cols-1 gap-4" id="cheat-sheet-grid">
+      <!-- Rendered dynamically -->
+    </div>
+
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <script src="js/database.js"></script>
+  <script src="js/progress.js"></script>
+  <script src="js/levels.js"></script>
+  <script src="js/achievements.js"></script>
+  <script src="js/questions.js"></script>
+  <script src="js/sql-engine.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    var CHEAT_DATA = [
+      {
+        topic: "SELECT",
+        desc: "The primary statement used to query and retrieve rows of data from database tables.",
+        syntax: "SELECT [DISTINCT] columns FROM table_name;",
+        example: "SELECT name, salary FROM employees;"
+      },
+      {
+        topic: "WHERE Filters",
+        desc: "Filters table rows before groups are processed, evaluating search conditions.",
+        syntax: "SELECT columns FROM table WHERE condition;",
+        example: "SELECT * FROM employees WHERE salary > 50000 AND department_id = 90;"
+      },
+      {
+        topic: "BETWEEN Operator",
+        desc: "Filters column values matching an inclusive numeric, string or date range.",
+        syntax: "WHERE column BETWEEN val1 AND val2;",
+        example: "WHERE hire_date BETWEEN '2020-01-01' AND '2021-12-31';"
+      },
+      {
+        topic: "IN List Filters",
+        desc: "Shorthand filter check returning rows matching values inside a specified list.",
+        syntax: "WHERE column IN (val1, val2, ...);",
+        example: "WHERE department_id IN (10, 60, 90);"
+      },
+      {
+        topic: "LIKE wildcards",
+        desc: "Evaluates patterns using wildcards: % represents multiple characters, _ represent a single character.",
+        syntax: "WHERE column LIKE 'pattern';",
+        example: "WHERE name LIKE 'A%_son';"
+      },
+      {
+        topic: "ORDER BY Sorting",
+        desc: "Sorts outputs ascending (ASC, default) or descending (DESC).",
+        syntax: "ORDER BY column1 [ASC|DESC], column2;",
+        example: "SELECT * FROM employees ORDER BY salary DESC, name ASC;"
+      },
+      {
+        topic: "Aggregate Functions",
+        desc: "Summarizes numeric columns to single outputs using COUNT, SUM, AVG, MIN, or MAX.",
+        syntax: "SELECT SUM(column), AVG(column) FROM table;",
+        example: "SELECT COUNT(*), AVG(salary) FROM employees;"
+      },
+      {
+        topic: "GROUP BY & HAVING",
+        desc: "Groups matching rows. HAVING filters groups post-aggregations (WHERE filters pre-grouping).",
+        syntax: "SELECT grp, AGG(col) FROM t GROUP BY grp HAVING AGG(col) > val;",
+        example: "SELECT department_id, COUNT(*) FROM employees GROUP BY department_id HAVING COUNT(*) > 5;"
+      },
+      {
+        topic: "INNER JOIN",
+        desc: "Combines records from two tables sharing matching keys.",
+        syntax: "SELECT * FROM t1 INNER JOIN t2 ON t1.key = t2.key;",
+        example: "SELECT e.name, d.department_name FROM employees e INNER JOIN departments d ON e.department_id = d.department_id;"
+      },
+      {
+        topic: "LEFT / RIGHT OUTER JOIN",
+        desc: "Retains all rows from the Left/Right table, pairing matches or filling NULLs.",
+        syntax: "SELECT * FROM t1 LEFT JOIN t2 ON t1.key = t2.key;",
+        example: "SELECT d.department_name, e.name FROM departments d LEFT JOIN employees e ON d.department_id = e.department_id;"
+      },
+      {
+        topic: "Subqueries",
+        desc: "Nested SQL query inside an outer select. Evaluated first and returned to outer filters.",
+        syntax: "SELECT * FROM t WHERE col > (SELECT AVG(col) FROM t);",
+        example: "SELECT * FROM employees WHERE salary > (SELECT AVG(salary) FROM employees);"
+      },
+      {
+        topic: "Common Table Expressions (CTE)",
+        desc: "Creates named temporary result structures referencing queries cleanly.",
+        syntax: "WITH cte_name AS (SELECT ...) SELECT * FROM cte_name;",
+        example: "WITH high_pay AS (SELECT * FROM employees WHERE salary > 100000) SELECT * FROM high_pay;"
+      },
+      {
+        topic: "Window Functions & PARTITION BY",
+        desc: "Computes analytics (ranks, running sums, lags) without grouping, preserving individual rows.",
+        syntax: "ROW_NUMBER() OVER (PARTITION BY grp ORDER BY col DESC)",
+        example: "SELECT name, DENSE_RANK() OVER (PARTITION BY department_id ORDER BY salary DESC) AS rank FROM employees;"
+      },
+      {
+        topic: "Oracle Hierarchical Queries",
+        desc: "Traverses tree parent-child relations recursively using prior mapping.",
+        syntax: "START WITH root_condition CONNECT BY PRIOR child = parent;",
+        example: "SELECT name FROM employees START WITH manager_id IS NULL CONNECT BY PRIOR id = manager_id;"
+      },
+      {
+        topic: "UPDATE Statements",
+        desc: "Modifies existing rows in database tables. Always use WHERE filters for safety.",
+        syntax: "UPDATE table SET column = value WHERE condition;",
+        example: "UPDATE employees SET salary = salary * 1.10 WHERE department_id = 60;"
+      },
+      {
+        topic: "MERGE (UPSERT)",
+        desc: "Oracle upsert command modifying target records depending on match status.",
+        syntax: "MERGE INTO target USING source ON (condition) WHEN MATCHED THEN UPDATE SET ... WHEN NOT MATCHED THEN INSERT ...",
+        example: "MERGE INTO products t USING updates s ON (t.id = s.id) WHEN MATCHED THEN UPDATE SET t.price = s.price;"
+      },
+      {
+        topic: "CREATE VIEW",
+        desc: "Creates virtual table wrapper over structured SELECT outcomes.",
+        syntax: "CREATE VIEW view_name AS SELECT ...",
+        example: "CREATE VIEW high_salary_emp AS SELECT * FROM employees WHERE salary > 80000;"
+      }
+    ];
+
+    // Sidebar rendering
+    App.renderNavigation('cheat-sheet');
+
+    var grid = document.getElementById('cheat-sheet-grid');
+    var search = document.getElementById('search-input');
+
+    function render(filterTerm = '') {
+      var query = filterTerm.toLowerCase().trim();
+      var filtered = CHEAT_DATA.filter(item => 
+        item.topic.toLowerCase().includes(query) || 
+        item.desc.toLowerCase().includes(query) || 
+        item.syntax.toLowerCase().includes(query)
+      );
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="p-5 text-center text-slate-500">No matching references found.</div>`;
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(item => {
+        html += `
+          <div class="bg-slate-900 border border-slate-850 rounded-xl p-4 space-y-3">
+            <div>
+              <h3 class="text-lg font-bold text-slate-100">${item.topic}</h3>
+              <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">${item.desc}</p>
+            </div>
+
+            <div class="space-y-1.5">
+              <div>
+                <span class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Syntax</span>
+                <pre class="bg-slate-950 p-2.5 rounded-md text-xs font-mono text-cyan-300 overflow-x-auto code-editor">${item.syntax}</pre>
+              </div>
+              <div>
+                <span class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Example</span>
+                <pre class="bg-slate-950 p-2.5 rounded-md text-xs font-mono text-emerald-300 overflow-x-auto code-editor">${item.example}</pre>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      grid.innerHTML = html;
+    }
+
+    // Initial render
+    render();
+
+    // Search input handler
+    search.addEventListener('input', (e) => {
+      render(e.target.value);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL Workspace — SQL Quest</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="min-h-screen flex bg-slate-950 text-slate-100">
+
+  <!-- Sidebar Navigation -->
+  <div id="nav-container"></div>
+
+  <!-- Main Playground -->
+  <main class="flex-1 flex flex-col md:flex-row h-screen overflow-hidden">
+    
+    <!-- Left Panel: Concept, Rules, Database Schema (Scrollable) -->
+    <section class="w-full md:w-1/2 flex flex-col bg-slate-900 border-r border-slate-800 h-full overflow-y-auto p-4 space-y-4">
+      
+      <!-- Top header with Back and Hearts -->
+      <div class="flex justify-between items-center pb-2.5 border-b border-slate-800">
+        <a href="world.html" class="text-xs font-bold text-slate-400 hover:text-white flex items-center space-x-1">
+          <span>⬅️</span> <span>SQL Map</span>
+        </a>
+        
+        <!-- Stats details -->
+        <div class="flex items-center space-x-4">
+          <!-- Streak -->
+          <div class="flex items-center space-x-1" id="streak-wrapper">
+            <span class="text-base">🔥</span>
+            <span class="text-xs font-bold text-amber-500" id="current-streak">0</span>
+          </div>
+          <!-- Hearts -->
+          <div class="flex items-center space-x-1" id="hearts-wrapper">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Level title and description -->
+      <div>
+        <div class="text-[10px] text-cyan-400 font-bold uppercase tracking-widest" id="world-tag">World 1: Beginner</div>
+        <h2 class="text-xl font-extrabold text-white mt-0.5" id="level-title">Level 1: Title</h2>
+      </div>
+
+      <!-- Concept Card -->
+      <div class="bg-slate-950 bg-opacity-40 border border-slate-800 rounded-xl p-3.5 space-y-3">
+        <div>
+          <h4 class="text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-1">Concept</h4>
+          <p class="text-xs text-slate-300 leading-normal" id="concept-text"></p>
+        </div>
+        
+        <div id="syntax-box">
+          <h4 class="text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-1">Syntax</h4>
+          <pre class="bg-slate-900 p-2.5 rounded-md text-xs text-cyan-300 font-mono overflow-x-auto code-editor" id="syntax-code"></pre>
+        </div>
+
+        <div id="example-box">
+          <h4 class="text-[10px] font-bold uppercase text-slate-400 tracking-wider mb-1">Example</h4>
+          <pre class="bg-slate-900 p-2.5 rounded-md text-xs text-emerald-300 font-mono overflow-x-auto code-editor" id="example-code"></pre>
+        </div>
+      </div>
+
+      <!-- Database Schemas Drawer -->
+      <div>
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Database Tables Schema</h3>
+        <div class="space-y-2" id="schema-drawers">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- Database Rows Preview -->
+      <div id="preview-box">
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Table Data Preview</h3>
+        <div id="data-preview-table" class="bg-slate-950 rounded-lg overflow-x-auto p-2.5 border border-slate-800">
+          <!-- Dynamically previewed table -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Right Panel: Challenge, Editor, and Results -->
+    <section class="w-full md:w-1/2 flex flex-col h-full overflow-hidden p-4 space-y-3.5">
+      
+      <!-- Challenge Goal -->
+      <div class="bg-gradient-to-r from-slate-900 to-slate-950 border border-slate-800 rounded-xl p-3.5 shadow-lg">
+        <div class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-1 flex items-center space-x-1">
+          <span>🎯</span> <span>YOUR CHALLENGE</span>
+        </div>
+        <p class="text-xs text-slate-200 font-medium leading-normal" id="challenge-text"></p>
+      </div>
+
+      <!-- Interactive Multiple Choice Section -->
+      <div id="multiple-choice-box" class="hidden bg-slate-900 border border-slate-800 rounded-xl p-3.5 space-y-2.5">
+        <!-- Rendered dynamically for L1, L47 -->
+      </div>
+
+      <!-- SQL Query IDE Workspace -->
+      <div id="editor-workspace" class="flex-1 flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden relative shadow-xl">
+        <div class="bg-slate-950 px-3 py-1.5 border-b border-slate-850 flex justify-between items-center text-xs font-mono text-slate-400">
+          <span>SQL EDITOR</span>
+          <span id="max-xp-pill" class="text-emerald-400 font-bold">+100 XP Max</span>
+        </div>
+        
+        <div class="flex-1 flex font-mono text-xs leading-5 overflow-hidden relative">
+          <!-- Line Numbers -->
+          <div id="editor-line-numbers" class="bg-slate-950 px-2 py-3 text-slate-600 text-right select-none border-r border-slate-850 flex flex-col space-y-0.5 overflow-hidden min-w-[2.5rem]">
+            <div>1</div>
+          </div>
+          <!-- Textarea Input -->
+          <textarea id="editor-textarea" 
+                    class="w-full bg-slate-900 text-slate-100 p-3 focus:outline-none resize-none font-mono leading-5 overflow-y-auto text-xs"
+                    spellcheck="false" placeholder="SELECT * FROM ..."></textarea>
+        </div>
+
+        <!-- Editor Toolbar -->
+        <div class="bg-slate-950 p-2 border-t border-slate-850 flex flex-wrap gap-1.5 items-center justify-between">
+          <div class="flex space-x-1.5">
+            <button id="run-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-extrabold px-3 py-1.5 rounded-lg transition-colors border border-slate-700">
+              ▶ RUN QUERY
+            </button>
+            <button id="hint-btn" class="bg-amber-600 hover:bg-amber-500 text-slate-950 text-[11px] font-extrabold px-3 py-1.5 rounded-lg transition-colors shadow">
+              💡 HINT
+            </button>
+            <button id="explain-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition-colors border border-slate-700">
+              🧑‍🏫 EXPLAIN
+            </button>
+          </div>
+          
+          <div class="flex space-x-1.5">
+            <button id="clear-btn" class="text-slate-500 hover:text-slate-300 text-xs px-2.5 py-1.5 transition-colors">
+              Clear
+            </button>
+            <button id="submit-btn" class="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-black text-[11px] px-4 py-2 rounded-lg transition-all transform hover:scale-[1.02] shadow glow-emerald">
+              ✓ SUBMIT ANSWER
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result Terminal Screen -->
+      <div class="h-1/3 bg-slate-950 border border-slate-850 rounded-xl p-3 flex flex-col overflow-hidden font-mono text-[11px] shadow-inner">
+        <div class="text-[9px] text-slate-500 uppercase tracking-widest border-b border-slate-850 pb-1.5 mb-1.5 flex justify-between">
+          <span>Query Result Terminal</span>
+          <span id="row-count" class="text-slate-600">0 rows returned</span>
+        </div>
+        <div class="flex-1 overflow-auto" id="result-console">
+          <span class="text-slate-500 font-mono">Terminal ready. Type a query and click RUN...</span>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Modal overlay templates -->
+  <!-- Success modal -->
+  <div id="success-modal" class="fixed inset-0 bg-slate-950 bg-opacity-80 z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass max-w-lg w-full rounded-3xl p-8 border border-slate-800 text-center glow-emerald bounce-once">
+      <span class="text-5xl">🏆</span>
+      <h3 class="text-3xl font-extrabold text-white mt-4">SUCCESSFUL RUN!</h3>
+      <p id="xp-award-text" class="text-sm font-bold text-emerald-400 mt-2">+100 XP gained</p>
+      
+      <!-- Explanation card -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 my-6 text-left space-y-2">
+        <div class="text-xs uppercase font-bold text-slate-500 tracking-wide">Developer Explanation</div>
+        <p id="success-expl" class="text-xs text-slate-300 leading-relaxed"></p>
+      </div>
+
+      <button id="next-lvl-btn" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-black py-4 rounded-xl shadow-lg hover:from-emerald-400 hover:to-cyan-400">
+        CONTINUE QUEST ➔
+      </button>
+    </div>
+  </div>
+
+  <!-- Game Over modal -->
+  <div id="game-over-modal" class="fixed inset-0 bg-slate-950 bg-opacity-90 z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass max-w-sm w-full rounded-3xl p-8 border border-rose-900 text-center glow-purple">
+      <span class="text-5xl">☠️</span>
+      <h3 class="text-2xl font-black text-rose-500 mt-4">TERMINAL LOCKDOWN</h3>
+      <p class="text-slate-400 text-xs mt-2">
+        You ran out of simulator hearts. Lockdowns ensure safety while reviewing.
+      </p>
+      
+      <div class="my-6 p-4 bg-slate-900 border border-rose-950 rounded-xl text-xs text-left text-slate-300">
+        <span class="font-bold text-amber-500 block mb-1">Recommended:</span>
+        Read the SQL Cheat Sheet or review previous levels to secure key concepts before attempting again.
+      </div>
+
+      <button id="retry-lvl-btn" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 rounded-xl border border-slate-700 transition-colors">
+        REBOOT SIMULATOR
+      </button>
+    </div>
+  </div>
+
+  <!-- Final Exam Score modal -->
+  <div id="exam-modal" class="fixed inset-0 bg-slate-950 bg-opacity-95 z-50 flex items-center justify-center p-4 hidden">
+    <div class="glass max-w-2xl w-full rounded-3xl p-8 border border-slate-800 relative glow-purple overflow-y-auto max-h-[90vh]">
+      <!-- Decor -->
+      <div class="absolute -top-10 -left-10 w-40 h-40 bg-purple-500 rounded-full blur-3xl opacity-20"></div>
+
+      <div class="text-center">
+        <span class="text-6xl">🎓</span>
+        <h3 class="text-3xl font-black bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent mt-4">
+          SQL MASTER EXAM COMPLETED
+        </h3>
+        <p class="text-slate-400 text-sm mt-1">Official SQL Quest Simulator Report</p>
+      </div>
+
+      <!-- Certificate Specs -->
+      <div class="grid grid-cols-2 gap-6 my-8 p-6 bg-slate-900 border border-slate-800 rounded-2xl">
+        <div class="border-r border-slate-800 text-center">
+          <div class="text-xs uppercase font-bold text-slate-500 tracking-wider">Exam Score</div>
+          <div id="exam-score" class="text-5xl font-black text-white mt-2">0/30</div>
+          <div id="exam-percent" class="text-xs text-cyan-400 mt-1 font-bold">0% Accuracy</div>
+        </div>
+        <div class="flex flex-col justify-center px-4 space-y-1 text-xs">
+          <div><span class="text-slate-500">Candidate:</span> <span class="font-bold text-slate-200" id="cert-candidate">DBA</span></div>
+          <div><span class="text-slate-500">Status:</span> <span class="font-bold text-emerald-400" id="cert-status">PASSED</span></div>
+          <div><span class="text-slate-500">XP Awarded:</span> <span class="font-bold text-yellow-500">+1,500 XP</span></div>
+        </div>
+      </div>
+
+      <!-- Skill Ratings -->
+      <div class="space-y-3 mb-8">
+        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Skill Category Grades</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="skill-grades">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <button id="exam-finish-btn" class="w-full bg-gradient-to-r from-cyan-500 to-purple-500 text-slate-950 font-black py-4 rounded-xl hover:from-cyan-400 hover:to-purple-400 transition-all shadow-lg glow-purple">
+        CLAIM SQL MASTER BADGE 🏅
+      </button>
+    </div>
+  </div>
+
+  <!-- Core scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <script src="js/database.js"></script>
+  <script src="js/progress.js"></script>
+  <script src="js/levels.js"></script>
+  <script src="js/achievements.js"></script>
+  <script src="js/questions.js"></script>
+  <script src="js/sql-engine.js"></script>
+  <script src="js/app.js"></script>
+  
+  <script>
+    var levelId = 1;
+    var level = null;
+    var maxXp = 100;
+    var currentHearts = 3;
+    var activeDatabase = 'company';
+    var activeTable = '';
+
+    // Final Exam State
+    var isExamMode = false;
+    var examIndex = 0;
+    var examAnswers = []; // user queries array
+
+    // Setup sidebar
+    App.renderNavigation('world');
+
+    // Sync editor scrolling with line numbers
+    var editorArea = document.getElementById('editor-textarea');
+    var lineNumbers = document.getElementById('editor-line-numbers');
+    
+    editorArea.addEventListener('scroll', () => {
+      lineNumbers.scrollTop = editorArea.scrollTop;
+    });
+
+    // Update line numbers dynamically
+    editorArea.addEventListener('input', updateLineNumbers);
+
+    // Parse level search param
+    var params = new URLSearchParams(window.location.search);
+    levelId = parseInt(params.get('level')) || Progress.load().currentLevel;
+
+    if (levelId === 50) {
+      // Run Exam Controller if level 50
+      isExamMode = true;
+      loadExamQuestion(0);
+    } else {
+      loadLevel(levelId);
+    }
+
+    // Toolbar bindings
+    document.getElementById('run-btn').addEventListener('click', runUserQuery);
+    document.getElementById('hint-btn').addEventListener('click', showHint);
+    document.getElementById('explain-btn').addEventListener('click', runExplainer);
+    document.getElementById('clear-btn').addEventListener('click', () => {
+      editorArea.value = '';
+      updateLineNumbers();
+    });
+    document.getElementById('submit-btn').addEventListener('click', submitAnswer);
+
+    // Modals bindings
+    document.getElementById('next-lvl-btn').addEventListener('click', advanceLevel);
+    document.getElementById('retry-lvl-btn').addEventListener('click', rebootLevel);
+
+    function updateLineNumbers() {
+      const editorArea = document.getElementById('editor-textarea');
+      const lineNumbers = document.getElementById('editor-line-numbers');
+      const lines = editorArea.value.split('\n').length;
+      let html = '';
+      for (let i = 1; i <= Math.max(1, lines); i++) {
+        html += `<div>${i}</div>`;
+      }
+      lineNumbers.innerHTML = html;
+    }
+
+    // Load regular levels
+    function loadLevel(id) {
+      level = LEVELS.find(lvl => lvl.id === id);
+      if (!level) {
+        window.location.href = 'world.html';
+        return;
+      }
+
+      levelId = id;
+      maxXp = 100;
+      activeDatabase = level.database;
+
+      // Update UI elements
+      document.getElementById('world-tag').innerText = `World ${level.world}: ${getWorldName(level.world)}`;
+      document.getElementById('level-title').innerText = `Level ${level.id}: ${level.title}`;
+      document.getElementById('concept-text').innerText = level.concept;
+      
+      // Update syntax and example blocks
+      document.getElementById('syntax-code').innerText = level.syntax;
+      document.getElementById('example-code').innerText = level.example;
+      document.getElementById('challenge-text').innerText = level.challenge;
+
+      // Clear editor and results
+      document.getElementById('editor-textarea').value = '';
+      document.getElementById('result-console').innerHTML = `<span class="text-slate-500">Terminal ready. Type a query and click RUN...</span>`;
+      document.getElementById('row-count').innerText = "0 rows returned";
+      updateLineNumbers();
+
+      // Reset heart indicators
+      const state = Progress.load();
+      currentHearts = state.hearts;
+      renderHearts();
+
+      // Render database schema lists
+      renderSchemaPanel(level.database, level.tables);
+
+      // Reset hint state
+      document.getElementById('hint-btn').classList.remove('opacity-50');
+      document.getElementById('hint-btn').disabled = false;
+      document.getElementById('max-xp-pill').innerText = "+100 XP Max";
+
+      // Render Multiple choice if interactive L1, L47
+      const mcBox = document.getElementById('multiple-choice-box');
+      const editorBox = document.getElementById('editor-workspace');
+      
+      if (level.interactiveType === "multiple-choice") {
+        mcBox.classList.remove('hidden');
+        editorBox.classList.add('hidden');
+        document.getElementById('explain-btn').classList.add('hidden');
+        document.getElementById('run-btn').classList.add('hidden');
+
+        // Draw multiple-choice radio items
+        let mcHtml = `<h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Select the correct answer:</h4>`;
+        level.options.forEach((opt, idx) => {
+          mcHtml += `
+            <div class="flex items-center">
+              <input type="radio" name="mc-option" id="opt-${idx}" value="${opt}" class="hidden sql-radio">
+              <label for="opt-${idx}" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-slate-300 font-semibold cursor-pointer transition-colors block select-none text-xs">
+                ${opt}
+              </label>
+            </div>
+          `;
+        });
+        
+        // Add submit button below options
+        mcHtml += `
+          <div class="pt-4 mt-2 border-t border-slate-800 flex justify-end">
+            <button id="mc-submit-btn" class="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-black text-[11px] px-5 py-2.5 rounded-lg transition-all transform hover:scale-[1.02] shadow glow-emerald">
+              ✓ SUBMIT ANSWER
+            </button>
+          </div>
+        `;
+        
+        mcBox.innerHTML = mcHtml;
+        document.getElementById('mc-submit-btn').addEventListener('click', submitAnswer);
+      } else {
+        mcBox.classList.add('hidden');
+        editorBox.classList.remove('hidden');
+        document.getElementById('explain-btn').classList.remove('hidden');
+        document.getElementById('run-btn').classList.remove('hidden');
+      }
+
+      // Auto preview first table
+      if (level.tables && level.tables.length > 0) {
+        previewTable(level.database, level.tables[0]);
+      }
+    }
+
+    function getWorldName(worldNum) {
+      switch (worldNum) {
+        case 1: return "Absolute Beginner";
+        case 2: return "SQL Foundation";
+        case 3: return "Intermediate SQL";
+        case 4: return "Advanced SQL";
+        case 5: return "SQL Master";
+        default: return "";
+      }
+    }
+
+    function renderHearts() {
+      const container = document.getElementById('hearts-wrapper');
+      let html = '';
+      for (let i = 0; i < 3; i++) {
+        html += `<span class="text-base transition-transform ${i < currentHearts ? 'text-rose-500' : 'text-slate-700'}">❤️</span>`;
+      }
+      container.innerHTML = html;
+      document.getElementById('current-streak').innerText = Progress.load().streak;
+    }
+
+    function triggerHeartShake() {
+      const wrapper = document.getElementById('hearts-wrapper');
+      wrapper.classList.add('hearts-shake');
+      setTimeout(() => wrapper.classList.remove('hearts-shake'), 500);
+    }
+
+    function renderSchemaPanel(dbName, activeTables) {
+      const drawer = document.getElementById('schema-drawers');
+      const db = DATABASES[dbName];
+      if (!db) return;
+
+      let html = '';
+      activeTables.forEach(tName => {
+        const tableRows = db[tName];
+        if (!tableRows || tableRows.length === 0) return;
+
+        const cols = Object.keys(tableRows[0]);
+        html += `
+          <div class="bg-slate-950 border border-slate-800 rounded-lg overflow-hidden">
+            <button onclick="previewTable('${dbName}', '${tName}')" class="w-full px-3 py-2 bg-slate-900 border-b border-slate-850 hover:bg-slate-800 transition-colors flex justify-between items-center text-[11px] font-bold text-slate-200">
+              <span class="font-mono text-cyan-400">${tName.toUpperCase()}</span>
+              <span class="text-[9px] text-slate-500">preview rows ➔</span>
+            </button>
+            <div class="p-2 text-[11px] grid grid-cols-2 gap-1.5 text-slate-400 font-mono">
+              ${cols.map(c => `
+                <div class="flex justify-between border-b border-slate-900 pb-0.5">
+                  <span>${c}</span>
+                  <span class="text-[9px] text-slate-650">${c.includes('id') || c.includes('salary') || c.includes('amount') || c.includes('price') || c.includes('age') ? 'NUMBER' : (c.includes('date') ? 'DATE' : 'VARCHAR2')}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      });
+      drawer.innerHTML = html;
+    }
+
+    function previewTable(dbName, tName) {
+      activeTable = tName;
+      const db = DATABASES[dbName];
+      if (!db || !db[tName]) return;
+
+      const rows = db[tName].slice(0, 3); // Preview top 3 rows
+      const cols = Object.keys(db[tName][0]);
+
+      let html = `
+        <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 font-mono flex justify-between">
+          <span>Schema Preview: ${tName.toUpperCase()}</span>
+          <span>Showing top 3 rows</span>
+        </div>
+        <table class="w-full text-left term-table border-collapse">
+          <thead>
+            <tr>
+              ${cols.map(c => `<th class="p-2 font-bold">${c.toUpperCase()}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => `
+              <tr>
+                ${cols.map(c => `<td class="p-2">${r[c] === null ? 'NULL' : r[c]}</td>`).join('')}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      document.getElementById('data-preview-table').innerHTML = html;
+    }
+
+    // Run query inside result terminal (for practice, do not validate)
+    function runUserQuery() {
+      App.Sound.playClick();
+      const userQuery = document.getElementById('editor-textarea').value.trim();
+      if (!userQuery) {
+        updateTerminalError("Editor empty. Please write your query.");
+        return;
+      }
+
+      const result = SQLEngine.execute(userQuery, activeDatabase);
+      renderTerminalResult(result);
+    }
+
+    function updateTerminalError(msg) {
+      const consoleEl = document.getElementById('result-console');
+      consoleEl.innerHTML = `<span class="text-rose-400 font-mono">ERROR: ${msg}</span>`;
+      document.getElementById('row-count').innerText = "0 rows";
+    }
+
+    function renderTerminalResult(result) {
+      const consoleEl = document.getElementById('result-console');
+      const rowCountEl = document.getElementById('row-count');
+
+      if (!result.success) {
+        consoleEl.innerHTML = `<span class="text-rose-400 font-mono">ERROR: ${result.error}</span>`;
+        rowCountEl.innerText = "0 rows";
+        return;
+      }
+
+      if (result.rows.length === 0) {
+        consoleEl.innerHTML = `<span class="text-slate-500 font-mono">Query executed successfully. 0 rows returned.</span>`;
+        rowCountEl.innerText = "0 rows";
+        return;
+      }
+
+      // Draw output table
+      let html = `
+        <table class="min-w-full text-left border-collapse font-mono text-xs">
+          <thead>
+            <tr class="border-b-2 border-slate-700">
+              ${result.columns.map(c => `<th class="p-2 text-slate-400 font-bold">${c.toUpperCase()}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${result.rows.map(row => `
+              <tr class="border-b border-slate-850 hover:bg-slate-900">
+                ${result.columns.map(c => `<td class="p-2">${row[c] === null ? '<span class="text-slate-600">NULL</span>' : row[c]}</td>`).join('')}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
+      consoleEl.innerHTML = html;
+      rowCountEl.innerText = `${result.rows.length} rows returned`;
+    }
+
+    function showHint() {
+      App.Sound.playClick();
+      if (isExamMode) return;
+      alert(`💡 Hint: ${level.hint}`);
+      // Limit XP
+      maxXp = 70;
+      document.getElementById('max-xp-pill').innerText = "+70 XP (Hint used)";
+      document.getElementById('hint-btn').classList.add('opacity-50');
+      document.getElementById('hint-btn').disabled = true;
+    }
+
+    // Custom SQL query parser and explainer
+    function runExplainer() {
+      App.Sound.playClick();
+      const userQuery = document.getElementById('editor-textarea').value.trim();
+      if (!userQuery) {
+        alert("Please write a query first before clicking explain!");
+        return;
+      }
+
+      const explanation = generateExplanation(userQuery);
+      alert(`🧑‍🏫 SQL Assistant Explanation:\n\n${explanation}`);
+    }
+
+    function generateExplanation(query) {
+      let q = query.replace(/\s+/g, ' ').replace(/;$/, '').trim().toUpperCase();
+      let steps = [];
+
+      // Extract tables
+      let fromMatch = q.match(/FROM\s+([a-zA-Z0-9_,\s]+?)(?=\s+WHERE|\s+GROUP|\s+ORDER|\s+JOIN|\s+FETCH|$)/i);
+      let tableName = fromMatch ? fromMatch[1].trim() : 'active table';
+
+      // Check Joins
+      let joinMatches = [];
+      const joinRegex = /(INNER|LEFT|RIGHT|FULL)\s+JOIN\s+([a-zA-Z0-9_]+)\s+ON\s+(.+?)(?=\s+JOIN|\s+WHERE|\s+GROUP|\s+ORDER|\s+FETCH|$)/ig;
+      let jm;
+      while ((jm = joinRegex.exec(q)) !== null) {
+        joinMatches.push({ type: jm[1], table: jm[2], condition: jm[3] });
+      }
+
+      steps.push(`1. SQL starts by loading the primary table: **${tableName.toLowerCase()}**.`);
+
+      if (joinMatches.length > 0) {
+        joinMatches.forEach(join => {
+          steps.push(`2. It performs a **${join.type} JOIN** on table **${join.table.toLowerCase()}** matching columns on the filter condition: **${join.condition.toLowerCase()}**.`);
+        });
+      }
+
+      // Check WHERE
+      let whereMatch = q.match(/WHERE\s+(.+?)(?=\s+GROUP|\s+ORDER|\s+FETCH|$)/i);
+      if (whereMatch) {
+        steps.push(`3. Next, it evaluates the **WHERE** clause to keep only rows matching: **${whereMatch[1].trim().toLowerCase()}**.`);
+      }
+
+      // Check GROUP BY
+      let groupMatch = q.match(/GROUP\s+BY\s+(.+?)(?=\s+HAVING|\s+ORDER|\s+FETCH|$)/i);
+      if (groupMatch) {
+        steps.push(`4. It groups the matching rows by unique values in the **${groupMatch[1].trim().toLowerCase()}** columns, ready for aggregate summaries (like COUNT, SUM).`);
+        
+        let havingMatch = q.match(/HAVING\s+(.+?)(?=\s+ORDER|\s+FETCH|$)/i);
+        if (havingMatch) {
+          steps.push(`5. It filters the calculated groups based on the **HAVING** condition: **${havingMatch[1].trim().toLowerCase()}**.`);
+        }
+      }
+
+      // Check SELECT projection
+      let selectMatch = q.match(/^SELECT\s+(.+?)\s+FROM/i);
+      if (selectMatch) {
+        let cols = selectMatch[1].trim().toLowerCase();
+        steps.push(`6. Finally, it keeps only the selected columns: **${cols}** for output display.`);
+      }
+
+      // Check sorting
+      let orderMatch = q.match(/ORDER\s+BY\s+(.+?)(?=\s+FETCH|$)/i);
+      if (orderMatch) {
+        steps.push(`7. It sorts the outputs based on values in the **${orderMatch[1].trim().toLowerCase()}** column.`);
+      }
+
+      return steps.join('\n\n');
+    }
+
+    // Submit and Validate
+    function submitAnswer() {
+      App.Sound.playClick();
+      
+      let userQuery = '';
+      let selectedOption = null;
+
+      if (level.interactiveType === "multiple-choice") {
+        const checked = document.querySelector('input[name="mc-option"]:checked');
+        if (!checked) {
+          alert("Please select an option before submitting!");
+          return;
+        }
+        selectedOption = checked.value;
+      } else {
+        userQuery = document.getElementById('editor-textarea').value.trim();
+        if (!userQuery) {
+          updateTerminalError("Editor empty. Please write your query.");
+          return;
+        }
+      }
+
+      if (isExamMode) {
+        // Save exam answer and go next
+        examAnswers[examIndex] = userQuery;
+        
+        if (examIndex < 29) {
+          examIndex++;
+          loadExamQuestion(examIndex);
+        } else {
+          gradeFinalExam();
+        }
+        return;
+      }
+
+      // Validate regular levels
+      const validation = SQLEngine.validateAnswer(
+        userQuery, 
+        level.solution, 
+        level.database, 
+        level.requiredKeywords, 
+        level.interactiveType, 
+        selectedOption
+      );
+
+      if (validation.isCorrect) {
+        App.Sound.playSuccess();
+        Progress.recordAttempt(levelId, true);
+        Progress.awardXp(maxXp);
+        Progress.resetHearts();
+        
+        // Show success modal
+        document.getElementById('xp-award-text').innerText = `+${maxXp} XP gained!`;
+        document.getElementById('success-expl').innerText = `Correct! ${level.title} teaches standard operations. Your query matched the expected output table.`;
+        document.getElementById('success-modal').classList.remove('hidden');
+      } else {
+        App.Sound.playFailure();
+        Progress.recordAttempt(levelId, false);
+        currentHearts = Progress.load().hearts;
+        renderHearts();
+        triggerHeartShake();
+        
+        if (validation.userResult) {
+          renderTerminalResult(validation.userResult);
+        }
+        
+        if (currentHearts <= 0) {
+          // Lock down
+          document.getElementById('game-over-modal').classList.remove('hidden');
+        } else {
+          alert(`❌ Incorrect Answer!\n\n${validation.error || 'Check details and try again!'}`);
+        }
+      }
+    }
+
+    function advanceLevel() {
+      App.Sound.playClick();
+      document.getElementById('success-modal').classList.add('hidden');
+      const nextLvl = levelId + 1;
+      if (nextLvl > 50) {
+        App.loadPage('dashboard.html');
+      } else {
+        App.loadPage(`level.html?level=${nextLvl}`);
+      }
+    }
+
+    function rebootLevel() {
+      App.Sound.playClick();
+      Progress.resetHearts();
+      document.getElementById('game-over-modal').classList.add('hidden');
+      loadLevel(levelId);
+    }
+
+
+    // --- EXAM CONTROLLER (LEVEL 50) ---
+    function loadExamQuestion(idx) {
+      const q = EXAM_QUESTIONS[idx];
+      maxXp = 100;
+      activeDatabase = q.database;
+
+      // Update UI elements
+      document.getElementById('world-tag').innerText = `EXAM QUESTION ${idx + 1} / 30`;
+      document.getElementById('level-title').innerText = `Difficulty: ${q.difficulty.toUpperCase()} | Topic: ${q.topic.toUpperCase()}`;
+      
+      // Show concept/syntax as general exam instructions
+      document.getElementById('concept-text').innerText = "The Final SQL Exam integrates everything from select expressions to Joins, Subqueries, Set Operators, and window aggregates. Review schemas, build queries, and run to verify. Ready to Submit?";
+      document.getElementById('syntax-box').classList.add('hidden');
+      document.getElementById('example-box').classList.add('hidden');
+      document.getElementById('hint-btn').classList.add('hidden');
+      document.getElementById('explain-btn').classList.add('hidden');
+
+      document.getElementById('challenge-text').innerText = q.question;
+
+      // Clear editor and results
+      document.getElementById('editor-textarea').value = examAnswers[idx] || '';
+      document.getElementById('result-console').innerHTML = `<span class="text-slate-500">Terminal ready. Run query to verify before submitting.</span>`;
+      document.getElementById('row-count').innerText = "0 rows";
+      updateLineNumbers();
+
+      // Render hearts as question counter in exam mode
+      document.getElementById('hearts-wrapper').innerHTML = `<span class="bg-purple-950 text-purple-400 border border-purple-500 border-opacity-30 rounded px-2.5 py-1 text-xs font-bold font-mono">Exam progress: ${idx + 1}/30</span>`;
+
+      // Render schemas
+      const tables = q.database === 'company' ? ['employees', 'departments'] : (q.database === 'ecommerce' ? ['products', 'customers', 'order_items', 'orders'] : (q.database === 'hospital' ? ['patients', 'bills'] : ['students', 'enrollments', 'courses']));
+      renderSchemaPanel(q.database, tables);
+      previewTable(q.database, tables[0]);
+
+      // Handle button labels
+      const submitBtn = document.getElementById('submit-btn');
+      if (idx === 29) {
+        submitBtn.innerHTML = `🏆 FINISH EXAM`;
+      } else {
+        submitBtn.innerHTML = `✓ SUBMIT & NEXT ➔`;
+      }
+    }
+
+    function gradeFinalExam() {
+      let score = 0;
+      const grades = {
+        basics: { correct: 0, total: 0 },
+        foundations: { correct: 0, total: 0 },
+        joins: { correct: 0, total: 0 },
+        subqueries: { correct: 0, total: 0 },
+        analytics: { correct: 0, total: 0 }
+      };
+
+      EXAM_QUESTIONS.forEach((q, idx) => {
+        const userQ = examAnswers[idx] || '';
+        const validation = SQLEngine.validateAnswer(userQ, q.solution, q.database, q.requiredKeywords);
+        
+        grades[q.topic].total++;
+        if (validation.isCorrect) {
+          score++;
+          grades[q.topic].correct++;
+        }
+      });
+
+      const finalPct = Math.round((score / 30) * 100);
+
+      // Save Exam state in progress
+      const state = Progress.load();
+      state.examAnswers = examAnswers;
+
+      let isPassed = finalPct >= 80; // 80% boundary
+      
+      if (isPassed) {
+        Progress.awardXp(1500); // 1500 XP Award
+        if (!state.completedLevels.includes(50)) {
+          state.completedLevels.push(50);
+        }
+        Achievements.checkUnlocks(state);
+      }
+
+      Progress.save();
+      App.Sound.playUnlock();
+
+      // Show Exam Summary modal
+      document.getElementById('exam-score').innerText = `${score} / 30`;
+      document.getElementById('exam-percent').innerText = `${finalPct}% Accuracy`;
+      document.getElementById('cert-candidate').innerText = state.playerName;
+      document.getElementById('cert-status').innerText = isPassed ? "PASSED" : "FAILED (80% req)";
+      document.getElementById('cert-status').className = isPassed ? "font-bold text-emerald-400" : "font-bold text-rose-500";
+
+      // Render breakdown list
+      const breakdown = document.getElementById('skill-grades');
+      let brHtml = '';
+      Object.keys(grades).forEach(topic => {
+        const data = grades[topic];
+        const pct = Math.round((data.correct / data.total) * 100) || 0;
+        let gradeName = "Excellent";
+        if (pct < 50) gradeName = "Needs Work";
+        else if (pct < 80) gradeName = "Good";
+
+        brHtml += `
+          <div class="bg-slate-950 p-3.5 border border-slate-850 rounded-xl flex items-center justify-between text-xs font-mono">
+            <div>
+              <span class="font-bold text-slate-200 capitalize">${topic}</span>
+              <span class="block text-[10px] text-slate-500 mt-1">${data.correct}/${data.total} correct</span>
+            </div>
+            <span class="font-bold ${pct >= 80 ? 'text-emerald-400' : (pct >= 50 ? 'text-amber-500' : 'text-rose-500')}">${gradeName} (${pct}%)</span>
+          </div>
+        `;
+      });
+      breakdown.innerHTML = brHtml;
+
+      document.getElementById('exam-modal').classList.remove('hidden');
+      document.getElementById('exam-finish-btn').addEventListener('click', () => {
+        App.Sound.playClick();
+        App.loadPage('dashboard.html');
+      });
+    }
+  </script>
+</body>
+</html>

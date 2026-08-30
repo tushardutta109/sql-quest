@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — SQL Quest</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="min-h-screen flex bg-slate-950 text-slate-100">
+
+  <!-- Shared Sidebar Navigation -->
+  <div id="nav-container"></div>
+
+  <!-- Main Content Dashboard -->
+  <main class="flex-1 p-5 overflow-y-auto w-full">
+    
+    <!-- Top Header -->
+    <header class="flex justify-between items-center mb-5 pb-3 border-b border-slate-800">
+      <div>
+        <h2 class="text-2xl font-extrabold tracking-tight">OPERATOR CONTROL</h2>
+        <p class="text-xs text-slate-500 mt-1 uppercase tracking-wider">Interface status: Online</p>
+      </div>
+      <div class="flex items-center space-x-4">
+        <!-- Streak Display -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 flex items-center space-x-2">
+          <span class="text-base">🔥</span>
+          <div>
+            <div class="text-[10px] text-slate-400 font-bold uppercase leading-none">Streak</div>
+            <div id="top-streak" class="text-xs font-black text-amber-500 leading-none mt-1">0 Days</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Review Recommender (Rendered Dynamically) -->
+    <div id="recommendation-box" class="hidden mb-5"></div>
+
+    <!-- Quick Play Module -->
+    <div class="glass border border-slate-850 rounded-2xl p-4 md:p-5 flex flex-col md:flex-row items-center justify-between mb-5 shadow-xl relative overflow-hidden">
+      <!-- Glow Decor -->
+      <div class="absolute -top-10 -right-10 w-40 h-40 bg-cyan-500 rounded-full blur-3xl opacity-10"></div>
+      
+      <div class="mb-5 md:mb-0">
+        <h3 class="text-xl font-bold tracking-tight text-white mb-1.5">Continue SQL Quest</h3>
+        <p class="text-slate-400 text-xs max-w-lg">
+          Dive back into the training simulator. Solve challenges, earn experience points, and unlock databases.
+        </p>
+        <!-- Level Progress -->
+        <div class="flex items-center space-x-3 mt-3">
+          <span id="progress-text" class="text-xs font-semibold text-cyan-400">Level 1 / 50</span>
+          <span class="text-xs text-slate-500">|</span>
+          <span id="xp-text" class="text-xs font-semibold text-emerald-400">0 XP Earned</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row space-y-2.5 sm:space-y-0 sm:space-x-3 w-full md:w-auto">
+        <button id="play-btn" class="bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-extrabold px-6 py-3 rounded-xl transition-all transform hover:scale-[1.03] shadow-lg glow-cyan text-center text-xs">
+          CONTINUE QUEST
+        </button>
+        <button id="exam-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-5 py-3 rounded-xl transition-colors border border-slate-700 text-center opacity-50 cursor-not-allowed text-xs">
+          FINAL EXAM 🏆
+        </button>
+      </div>
+    </div>
+
+    <!-- Statistics Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
+        <div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Accuracy</div>
+        <div id="stat-accuracy" class="text-2xl font-black text-white mt-1.5">100%</div>
+        <span class="text-[9px] text-slate-600 mt-1.5 block">Correct first attempts ratio</span>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
+        <div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Solved</div>
+        <div id="stat-solved" class="text-2xl font-black text-white mt-1.5">0/50</div>
+        <span class="text-[9px] text-slate-600 mt-1.5 block">SQL puzzles passed</span>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
+        <div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Best Streak</div>
+        <div id="stat-best-streak" class="text-2xl font-black text-white mt-1.5">0</div>
+        <span class="text-[9px] text-slate-600 mt-1.5 block">Highest consecutive count</span>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
+        <div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Total Mistakes</div>
+        <div id="stat-mistakes" class="text-2xl font-black text-rose-500 mt-1.5">0</div>
+        <span class="text-[9px] text-slate-600 mt-1.5 block">Incorrect syntax attempts</span>
+      </div>
+    </div>
+
+    <!-- Badges shelf -->
+    <section>
+      <h3 class="text-lg font-bold tracking-tight text-slate-300 mb-3">BADGES COLLECTED</h3>
+      <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3.5" id="badges-shelf">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Core scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <script src="js/database.js"></script>
+  <script src="js/progress.js"></script>
+  <script src="js/levels.js"></script>
+  <script src="js/achievements.js"></script>
+  <script src="js/questions.js"></script>
+  <script src="js/sql-engine.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    // Setup sidebar
+    App.renderNavigation('dashboard');
+
+    var state = Progress.load();
+
+    // Scan and check achievements
+    var newlyUnlocked = Achievements.checkUnlocks(state);
+    if (newlyUnlocked.length > 0) {
+      Progress.save(); // Save updated badges list
+      newlyUnlocked.forEach(badge => {
+        App.showNotification(`Badge Unlocked: ${badge.title}`, badge.description, badge.icon);
+      });
+    }
+
+    // Stats update
+    document.getElementById('top-streak').innerText = `${state.streak} Fire`;
+    document.getElementById('progress-text').innerText = `Level ${state.completedLevels.length === 50 ? '50 (Master)' : state.currentLevel} / 50`;
+    document.getElementById('xp-text').innerText = `${state.xp} XP Earned`;
+
+    document.getElementById('stat-accuracy').innerText = `${state.accuracy}%`;
+    document.getElementById('stat-solved').innerText = `${state.completedLevels.length}/50`;
+    document.getElementById('stat-best-streak').innerText = `${state.bestStreak}`;
+    document.getElementById('stat-mistakes').innerText = `${state.totalMistakes}`;
+
+    // Final Exam unlock condition
+    var examBtn = document.getElementById('exam-btn');
+    if (state.completedLevels.length >= 49) {
+      examBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      examBtn.classList.add('bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'hover:from-purple-500', 'hover:to-indigo-500');
+      examBtn.removeAttribute('disabled');
+      examBtn.addEventListener('click', () => {
+        App.Sound.playClick();
+        App.loadPage('level.html?level=50');
+      });
+    }
+
+    // Play button action
+    document.getElementById('play-btn').addEventListener('click', () => {
+      App.Sound.playClick();
+      App.loadPage(`level.html?level=${state.currentLevel}`);
+    });
+
+    // Render Badge shelves
+    var shelf = document.getElementById('badges-shelf');
+    var badgeHtml = '';
+    Achievements.BADGES.forEach(badge => {
+      const isUnlocked = state.badges.includes(badge.id);
+      badgeHtml += `
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center text-center transition-all ${
+          isUnlocked ? 'glow-purple border-purple-500 border-opacity-30' : 'badge-locked'
+        }">
+          <div class="text-3xl mb-1.5">${badge.icon}</div>
+          <div class="font-bold text-[10px] text-slate-200 leading-tight">${badge.title}</div>
+          <div class="text-[8px] text-slate-500 mt-1 leading-normal max-w-[90px]">${badge.description}</div>
+        </div>
+      `;
+    });
+    shelf.innerHTML = badgeHtml;
+
+    // Handle Review Recommendations
+    var recomm = Progress.getReviewRecommendation();
+    var recBox = document.getElementById('recommendation-box');
+    if (recomm) {
+      recBox.classList.remove('hidden');
+      recBox.innerHTML = `
+        <div class="bg-slate-900 border-l-4 border-amber-500 rounded-xl p-5 flex items-center justify-between">
+          <div>
+            <div class="text-sm font-bold text-amber-500 uppercase tracking-wider flex items-center space-x-2">
+              <span>⚠️</span> <span>Concept Review Recommended</span>
+            </div>
+            <div class="text-sm text-slate-300 mt-1">${recomm.message}</div>
+            <div class="text-xs text-slate-500 mt-2">
+              Recommended action: Try reviewing levels ${recomm.levels.join(', ')} or jump into <a href="practice.html?topic=${recomm.topic.toLowerCase()}" class="text-cyan-400 hover:underline">Practice Mode</a>.
+            </div>
+          </div>
+          <div class="flex space-x-2">
+            ${recomm.levels.map(lvl => `
+              <a href="level.html?level=${lvl}" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-bold px-3 py-1.5 rounded-lg text-xs">
+                Review Lvl ${lvl}
+              </a>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>
